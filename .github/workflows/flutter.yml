@@ -1,51 +1,97 @@
-name: Flutter CI
-on: [push, pull_request]
+# Nom du workflow (visible dans l'onglet Actions de GitHub)
+name: CI Flutter
+
+# Déclencheurs : quand le workflow doit s'exécuter
+on:
+  push:            # Se déclenche lors d'un push
+    branches: [ "main" ]  # Uniquement sur la branche main
+  pull_request:    # Se déclenche lors d'une pull request
+    branches: [ "main" ]  # Uniquement vers la branche main
+
 jobs:
+  # Premier job : Construction de l'APK Android
   build-apk:
+    # Exécution sur une machine virtuelle Ubuntu
     runs-on: ubuntu-latest
+    
     steps:
+      # Étape 1 : Récupération du code source
       - uses: actions/checkout@v4
+      
+      # Étape 2 : Installation de Java (nécessaire pour Android)
       - uses: actions/setup-java@v4
         with:
-          distribution: 'zulu'
-          java-version: '17'
+          distribution: 'zulu'  # Distribution Zulu de Java
+          java-version: '17'     # Version 17 de Java
+      
+      # Étape 3 : Installation de Flutter
       - uses: subosito/flutter-action@v2
         with:
-          channel: stable
-      - name: Install dependencies
+          channel: stable       # Version stable de Flutter
+          flutter-version: latest  # Dernière version disponible
+      
+      # Étape 4 : Installation des dépendances
+      - name: Installer les dépendances
         run: flutter pub get
-      - name: Format & Analyze
+      
+      # Étape 5 : Vérification du format et analyse du code
+      - name: Vérifier le format et analyser
         run: |
-          flutter format --set-exit-if-changed .
-          flutter analyze
-      - name: Run tests
+          flutter format --set-exit-if-changed .  # Vérifie le style de code
+          flutter analyze  # Analyse statique du code
+      
+      # Étape 6 : Exécution des tests
+      - name: Exécuter les tests
         run: flutter test
-      - name: Accept Android licenses
+      
+      # Étape 7 : Acceptation des licences Android
+      - name: Accepter les licences Android
         run: yes | flutter doctor --android-licenses
-      - name: Build APK
-        run: flutter build apk --release
+      
+      # Étape 8 : Construction de l'APK
+      - name: Construire l'APK
+        run: flutter build apk --release  # Version release (production)
 
+  # Deuxième job : Déploiement web
   build-web:
+    # Exécution sur une machine virtuelle Ubuntu
     runs-on: ubuntu-latest
+    
     steps:
+      # Étape 1 : Récupération du code source
       - uses: actions/checkout@v4
+      
+      # Étape 2 : Installation de Flutter
       - uses: subosito/flutter-action@v2
         with:
           channel: stable
-      - name: Install dependencies
-        run: flutter pub get
-      - name: Enable Web
+          flutter-version: latest
+      
+      # Étape 3 : Activation du support web
+      - name: Activer le support web
         run: flutter config --enable-web
-      - name: Format & Analyze
+      
+      # Étape 4 : Installation des dépendances
+      - name: Installer les dépendances
+        run: flutter pub get
+      
+      # Étape 5 : Vérification du format et analyse du code
+      - name: Vérifier le format et analyser
         run: |
           flutter format --set-exit-if-changed .
           flutter analyze
-      - name: Run tests
+      
+      # Étape 6 : Exécution des tests
+      - name: Exécuter les tests
         run: flutter test
-      - name: Build Web
+      
+      # Étape 7 : Construction de la version web
+      - name: Construire la version web
         run: flutter build web --release --base-href="/${{ github.event.repository.name }}/"
-      - name: Deploy to GitHub Pages
+      
+      # Étape 8 : Déploiement sur GitHub Pages
+      - name: Déployer sur GitHub Pages
         uses: peaceiris/actions-gh-pages@v4
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./build/web
+          github_token: ${{ secrets.GITHUB_TOKEN }}  # Token d'authentification
+          publish_dir: ./build/web  # Dossier à publier
